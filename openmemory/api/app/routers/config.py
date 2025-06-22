@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Config as ConfigModel
 from app.utils.memory import reset_memory_client
+from app.utils.vector_store import wipe_vector_store_if_embedder_changed
 
 router = APIRouter(prefix="/api/v1/config", tags=["config"])
 
@@ -150,9 +151,9 @@ async def update_configuration(config: ConfigSchema, db: Session = Depends(get_d
     """Update the configuration."""
     current_config = get_config_from_db(db)
     
-    # Convert to dict for processing
-    updated_config = current_config.copy()
-    
+    # Deep copy for safe modification
+    updated_config = json.loads(json.dumps(current_config))
+
     # Update openmemory settings if provided
     if config.openmemory is not None:
         if "openmemory" not in updated_config:
@@ -160,7 +161,14 @@ async def update_configuration(config: ConfigSchema, db: Session = Depends(get_d
         updated_config["openmemory"].update(config.openmemory.dict(exclude_none=True))
     
     # Update mem0 settings
-    updated_config["mem0"] = config.mem0.dict(exclude_none=True)
+    if config.mem0 is not None:
+        mem0_update_data = config.mem0.dict(exclude_none=True)
+        if "mem0" not in updated_config:
+            updated_config["mem0"] = {}
+        updated_config["mem0"].update(mem0_update_data)
+
+    # Wipe vector store if embedder config changed
+    wipe_vector_store_if_embedder_changed(current_config, updated_config)
     
     # Save the configuration to database
     save_config_to_db(db, updated_config)
@@ -218,8 +226,11 @@ async def get_embedder_configuration(db: Session = Depends(get_db)):
 @router.put("/mem0/embedder", response_model=EmbedderProvider)
 async def update_embedder_configuration(embedder_config: EmbedderProvider, db: Session = Depends(get_db)):
     """Update only the Embedder configuration."""
-    current_config = get_config_from_db(db)
+    old_config = get_config_from_db(db)
     
+    # Deep copy for safe modification
+    current_config = json.loads(json.dumps(old_config))
+
     # Ensure mem0 key exists
     if "mem0" not in current_config:
         current_config["mem0"] = {}
@@ -227,6 +238,9 @@ async def update_embedder_configuration(embedder_config: EmbedderProvider, db: S
     # Update the Embedder configuration
     current_config["mem0"]["embedder"] = embedder_config.dict(exclude_none=True)
     
+    # Wipe vector store if embedder config changed
+    wipe_vector_store_if_embedder_changed(old_config, current_config)
+
     # Save the configuration to database
     save_config_to_db(db, current_config)
     reset_memory_client()
