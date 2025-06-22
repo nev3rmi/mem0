@@ -6,3 +6,7 @@ alwaysApply: true
 1/ Always keep the code_memory MCP to latest
 
 2/ Retreive code_memory before providing the answer
+
+3/ Never use -d for compose we need to see the logging
+
+4/ Only check the production: docker-compose -f docker-compose.prod.yml up --build

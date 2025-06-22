@@ -247,17 +247,6 @@ def get_memory_client(custom_instructions: str = None):
         finally:
             db.close()
 
-        # Prioritize OpenRouter if the API key is set
-        if os.environ.get("OPENROUTER_API_KEY"):
-            print("Found OPENROUTER_API_KEY, configuring for OpenRouter.")
-            if "llm" in config and config["llm"].get("provider") == "openai":
-                config["llm"]["config"]["api_key"] = "env:OPENROUTER_API_KEY"
-            if "embedder" in config and config["embedder"].get("provider") == "openai":
-                # Note: OpenRouter doesn't have a dedicated embedding endpoint.
-                # Depending on the model, this might still work or require a different provider.
-                # For now, we point it to OpenRouter as well.
-                config["embedder"]["config"]["api_key"] = "env:OPENROUTER_API_KEY"
-
         # Parse environment variables in the final config
         print("Parsing environment variables in final config...")
         config = _parse_environment_variables(config)
@@ -272,6 +261,7 @@ def get_memory_client(custom_instructions: str = None):
         
         # Re-initialize client only if config has changed
         if _memory_client is None or new_hash != _config_hash:
+            print("Full config being sent to mem0:", json.dumps(config, indent=2))
             print(f"Initializing memory client with config hash: {new_hash}")
             _memory_client = Memory.from_config(config)
             _config_hash = new_hash

@@ -1,5 +1,6 @@
 "use client"
 
+import React from 'react'
 import { useState, useEffect } from "react"
 import { Eye, EyeOff } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
@@ -21,15 +22,6 @@ export function FormView({ settings, onChange }: FormViewProps) {
   const [showLlmAdvanced, setShowLlmAdvanced] = useState(false)
   const [showLlmApiKey, setShowLlmApiKey] = useState(false)
   const [showEmbedderApiKey, setShowEmbedderApiKey] = useState(false)
-  const [useOpenRouter, setUseOpenRouter] = useState(false)
-
-  useEffect(() => {
-    if (settings.mem0?.llm?.provider?.toLowerCase() === 'openai') {
-      setUseOpenRouter(settings.mem0.llm.config?.base_url === 'https://openrouter.ai/api/v1');
-    } else {
-      setUseOpenRouter(false);
-    }
-  }, [settings.mem0?.llm]);
 
   const handleOpenMemoryChange = (key: string, value: any) => {
     onChange({
@@ -41,40 +33,27 @@ export function FormView({ settings, onChange }: FormViewProps) {
     })
   }
 
-  const getUiProviderSelection = () => {
-    const llm = settings.mem0?.llm;
-    if (llm?.provider === 'openai' && llm?.config?.base_url === 'https://openrouter.ai/api/v1') {
-        return 'openrouter';
-    }
-    return llm?.provider || '';
-  }
-
   const handleLlmProviderChange = (value: string) => {
-    const llmConfig = settings.mem0?.llm?.config || {};
-    const newConfig = { ...llmConfig };
-    let providerForMem0;
-
-    if (value === 'openrouter') {
-        providerForMem0 = 'openai';
-        newConfig.base_url = 'https://openrouter.ai/api/v1';
-    } else {
-        providerForMem0 = value;
-        if (newConfig.base_url === 'https://openrouter.ai/api/v1') {
-           delete newConfig.base_url;
-        }
-    }
+    // Reset config when provider changes, but keep essential fields
+    const currentConfig = settings.mem0?.llm?.config || {};
+    const newConfig = {
+      model: currentConfig.model || "",
+      api_key: currentConfig.api_key || "",
+      temperature: currentConfig.temperature ?? 0.7, // Use existing or a default
+      max_tokens: currentConfig.max_tokens ?? 2000, // Use existing or a default
+    };
 
     onChange({
       ...settings,
       mem0: {
         ...settings.mem0,
         llm: {
-          provider: providerForMem0,
+          provider: value,
           config: newConfig,
         },
       },
     });
-  };
+  }
 
   const handleLlmConfigChange = (key: string, value: any) => {
     onChange({
@@ -93,16 +72,22 @@ export function FormView({ settings, onChange }: FormViewProps) {
   }
 
   const handleEmbedderProviderChange = (value: string) => {
+    // Reset config for the new provider, keeping the model name
+    const currentConfig = settings.mem0?.embedder?.config || {};
+    const newConfig = {
+      model: currentConfig.model || "",
+      api_key: currentConfig.api_key || "",
+    };
     onChange({
       ...settings,
       mem0: {
         ...settings.mem0,
         embedder: {
-          ...settings.mem0.embedder,
           provider: value,
+          config: newConfig,
         },
       },
-    })
+    });
   }
 
   const handleEmbedderConfigChange = (key: string, value: any) => {
@@ -157,37 +142,40 @@ export function FormView({ settings, onChange }: FormViewProps) {
   const needsEmbedderApiKey = settings.mem0?.embedder?.provider?.toLowerCase() !== "ollama"
   const isLlmOllama = settings.mem0?.llm?.provider?.toLowerCase() === "ollama"
   const isLlmOpenAI = settings.mem0?.llm?.provider?.toLowerCase() === "openai"
+  const isLlmOpenRouter = settings.mem0?.llm?.provider?.toLowerCase() === "openrouter"
   const isEmbedderOllama = settings.mem0?.embedder?.provider?.toLowerCase() === "ollama"
+  const isEmbedderOpenAI = settings.mem0?.embedder?.provider?.toLowerCase() === "openai"
 
   const LLM_PROVIDERS = [
-    "OpenAI",
-    "Anthropic",
-    "Azure OpenAI",
-    "Ollama",
-    "Together",
-    "Groq",
-    "Litellm",
-    "Mistral AI",
-    "Google AI",
-    "AWS Bedrock",
-    "Gemini",
-    "DeepSeek",
-    "xAI",
-    "LM Studio",
-    "LangChain",
+    "openai",
+    "openrouter",
+    "anthropic",
+    "azure_openai",
+    "ollama",
+    "together",
+    "groq",
+    "litellm",
+    "mistral_ai",
+    "google_ai",
+    "aws_bedrock",
+    "gemini",
+    "deepseek",
+    "xai",
+    "lmstudio",
+    "langchain",
   ]
 
   const EMBEDDER_PROVIDERS = [
-    "OpenAI",
-    "Azure OpenAI",
-    "Ollama",
-    "Hugging Face",
-    "Vertexai",
-    "Gemini",
-    "Lmstudio",
-    "Together",
-    "LangChain",
-    "AWS Bedrock",
+    "openai",
+    "azure_openai",
+    "ollama",
+    "huggingface",
+    "vertexai",
+    "gemini",
+    "lmstudio",
+    "together",
+    "langchain",
+    "aws_bedrock",
   ]
 
   const vectorStoreProvider = settings.mem0.vector_store?.provider
@@ -235,13 +223,37 @@ export function FormView({ settings, onChange }: FormViewProps) {
               </SelectTrigger>
               <SelectContent>
                 {LLM_PROVIDERS.map((provider) => (
-                  <SelectItem key={provider} value={provider.toLowerCase()}>
-                    {provider}
+                  <SelectItem key={provider} value={provider}>
+                    {provider.charAt(0).toUpperCase() + provider.slice(1).replace(/_/g, " ")}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          {isLlmOpenRouter && (
+            <div className="space-y-2">
+              <Label htmlFor="llm-openrouter-base-url">OpenRouter Base URL</Label>
+              <Input
+                id="llm-openrouter-base-url"
+                placeholder="e.g., https://openrouter.ai/api/v1"
+                value={settings.mem0?.llm?.config?.openrouter_base_url || ""}
+                onChange={(e) => handleLlmConfigChange("openrouter_base_url", e.target.value)}
+              />
+            </div>
+          )}
+
+          {isLlmOpenAI && (
+            <div className="space-y-2">
+              <Label htmlFor="llm-openai-base-url">OpenAI Base URL</Label>
+              <Input
+                id="llm-openai-base-url"
+                placeholder="e.g., https://api.openai.com/v1"
+                value={settings.mem0?.llm?.config?.openai_base_url || ""}
+                onChange={(e) => handleLlmConfigChange("openai_base_url", e.target.value)}
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="llm-model">Model</Label>
@@ -253,30 +265,38 @@ export function FormView({ settings, onChange }: FormViewProps) {
             />
           </div>
 
-          {isLlmOpenAI && (
-             <div className="space-y-4">
-                <div className="flex items-center space-x-2 pt-2">
-                  <Switch 
-                    id="use-openrouter" 
-                    checked={useOpenRouter} 
-                    onCheckedChange={(isToggled) => {
-                      setUseOpenRouter(isToggled);
-                      handleLlmConfigChange('base_url', isToggled ? 'https://openrouter.ai/api/v1' : '');
-                    }} 
-                  />
-                  <Label htmlFor="use-openrouter">Use OpenRouter</Label>
+          <div className="flex items-center space-x-2 pt-2">
+            <Switch id="llm-advanced-settings" checked={showLlmAdvanced} onCheckedChange={setShowLlmAdvanced} />
+            <Label htmlFor="llm-advanced-settings">Show advanced settings</Label>
+          </div>
+
+          {showLlmAdvanced && (
+            <div className="space-y-6 pt-2">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <Label htmlFor="temperature">Temperature: {settings.mem0?.llm?.config?.temperature}</Label>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="llm-openai-base-url">Base URL</Label>
-                  <Input
-                    id="llm-openai-base-url"
-                    placeholder="https://api.openai.com/v1"
-                    value={settings.mem0?.llm?.config?.base_url || ""}
-                    onChange={(e) => handleLlmConfigChange("base_url", e.target.value)}
-                    disabled={useOpenRouter}
-                  />
-                </div>
+                <Slider
+                  id="temperature"
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  value={[settings.mem0?.llm?.config?.temperature || 0.7]}
+                  onValueChange={(value) => handleLlmConfigChange("temperature", value[0])}
+                />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="max-tokens">Max Tokens</Label>
+                <Input
+                  id="max-tokens"
+                  type="number"
+                  placeholder="2000"
+                  value={settings.mem0?.llm?.config?.max_tokens || ""}
+                  onChange={(e) => handleLlmConfigChange("max_tokens", Number.parseInt(e.target.value) || "")}
+                />
+              </div>
+            </div>
           )}
 
           {isLlmOllama && (
@@ -320,40 +340,6 @@ export function FormView({ settings, onChange }: FormViewProps) {
               </p>
             </div>
           )}
-
-          <div className="flex items-center space-x-2 pt-2">
-            <Switch id="llm-advanced-settings" checked={showLlmAdvanced} onCheckedChange={setShowLlmAdvanced} />
-            <Label htmlFor="llm-advanced-settings">Show advanced settings</Label>
-          </div>
-
-          {showLlmAdvanced && (
-            <div className="space-y-6 pt-2">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <Label htmlFor="temperature">Temperature: {settings.mem0?.llm?.config?.temperature}</Label>
-                </div>
-                <Slider
-                  id="temperature"
-                  min={0}
-                  max={1}
-                  step={0.1}
-                  value={[settings.mem0?.llm?.config?.temperature || 0.7]}
-                  onValueChange={(value) => handleLlmConfigChange("temperature", value[0])}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="max-tokens">Max Tokens</Label>
-                <Input
-                  id="max-tokens"
-                  type="number"
-                  placeholder="2000"
-                  value={settings.mem0?.llm?.config?.max_tokens || ""}
-                  onChange={(e) => handleLlmConfigChange("max_tokens", Number.parseInt(e.target.value) || "")}
-                />
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -375,13 +361,25 @@ export function FormView({ settings, onChange }: FormViewProps) {
               </SelectTrigger>
               <SelectContent>
                 {EMBEDDER_PROVIDERS.map((provider) => (
-                  <SelectItem key={provider} value={provider.toLowerCase()}>
-                    {provider}
+                  <SelectItem key={provider} value={provider}>
+                    {provider.charAt(0).toUpperCase() + provider.slice(1).replace(/_/g, " ")}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          {isEmbedderOpenAI && (
+            <div className="space-y-2">
+              <Label htmlFor="embedder-openai-base-url">OpenAI Base URL</Label>
+              <Input
+                id="embedder-openai-base-url"
+                placeholder="e.g., https://api.openai.com/v1"
+                value={settings.mem0?.embedder?.config?.openai_base_url || ""}
+                onChange={(e) => handleEmbedderConfigChange("openai_base_url", e.target.value)}
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="embedder-model">Model</Label>
