@@ -1,6 +1,7 @@
 import logging
 import json
 from typing import List
+import os
 
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -9,7 +10,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from app.utils.prompts import MEMORY_CATEGORIZATION_PROMPT
 
 load_dotenv()
-openai_client = OpenAI()
+# openai_client = OpenAI() # This will be initialized inside the function
 
 
 class MemoryCategories(BaseModel):
@@ -18,6 +19,28 @@ class MemoryCategories(BaseModel):
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=15))
 def get_categories_for_memory(memory: str) -> List[str]:
+    """
+    Get categories for a memory using an LLM.
+
+    This function initializes the OpenAI client, checking for OpenRouter configuration first,
+    and then makes a request to the LLM to categorize the memory.
+
+    Args:
+        memory: The memory content to categorize.
+
+    Returns:
+        A list of category strings.
+    """
+    api_key = os.environ.get("OPENROUTER_API_KEY")
+    if api_key:
+        client = OpenAI(
+            api_key=api_key,
+            base_url=os.environ.get("OPENROUTER_API_BASE", "https://openrouter.ai/api/v1"),
+        )
+    else:
+        # If OPENROUTER_API_KEY is not set, it will use OPENAI_API_KEY by default
+        client = OpenAI()
+        
     completion = None  # Initialize completion to None
     try:
         messages = [
@@ -25,7 +48,7 @@ def get_categories_for_memory(memory: str) -> List[str]:
             {"role": "user", "content": memory}
         ]
 
-        completion = openai_client.chat.completions.create(
+        completion = client.chat.completions.create(
             model="gpt-4o-mini",  # This will be overridden by your config
             messages=messages,
             temperature=0,
