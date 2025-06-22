@@ -148,7 +148,7 @@ export function FormView({ settings, onChange }: FormViewProps) {
 
   const LLM_PROVIDERS = [
     "openai",
-    "openrouter",
+    // "openrouter",
     "anthropic",
     "azure_openai",
     "ollama",
