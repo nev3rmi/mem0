@@ -25,12 +25,17 @@ services:
     build:
       context: ui/
       dockerfile: Dockerfile
+      target: deps
     image: mem0/openmemory-ui:latest
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-      - NEXT_PUBLIC_USER_ID=${USER}
+      - NEXT_PUBLIC_API_URL=http://192.168.31.174:8765
+      - NEXT_PUBLIC_USER_ID=nev3rmi
+    volumes:
+      - ./ui:/app
+      - /app/node_modules
+    command: pnpm dev
 
 volumes:
   mem0_storage:
