@@ -1,27 +1,19 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '@/store/store';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/store/store';
 import {
   setConfigLoading,
   setConfigSuccess,
   setConfigError,
   updateLLM,
   updateEmbedder,
-  updateMem0Config,
-  updateOpenMemory,
+  updateVectorStore,
   LLMProvider,
   EmbedderProvider,
   Mem0Config,
   OpenMemoryConfig,
-  setLoading,
-  setError,
-  setConfig,
-  setLLMConfig,
-  setEmbedderConfig,
-  setOpenMemoryConfig,
   VectorStoreProvider,
-  setVectorStoreConfig,
 } from '@/store/configSlice';
 import { toast } from 'react-hot-toast';
 
@@ -137,7 +129,7 @@ export const useConfig = (): UseConfigApiReturn => {
     
     try {
       const response = await axios.put(`${URL}/api/v1/config/mem0/vector_store`, vectorStoreConfig);
-      dispatch(setVectorStoreConfig(response.data));
+      dispatch(updateVectorStore(response.data));
       setIsLoading(false);
       return response.data;
     } catch (err: any) {

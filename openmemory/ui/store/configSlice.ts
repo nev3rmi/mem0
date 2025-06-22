@@ -105,6 +105,9 @@ const configSlice = createSlice({
     updateEmbedder: (state, action: PayloadAction<EmbedderProvider>) => {
       state.mem0.embedder = action.payload;
     },
+    updateVectorStore: (state, action: PayloadAction<VectorStoreProvider>) => {
+      state.mem0.vector_store = action.payload;
+    },
     updateMem0Config: (state, action: PayloadAction<Mem0Config>) => {
       state.mem0 = action.payload;
     },
@@ -118,6 +121,7 @@ export const {
   updateOpenMemory,
   updateLLM,
   updateEmbedder,
+  updateVectorStore,
   updateMem0Config,
 } = configSlice.actions;
 
