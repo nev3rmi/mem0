@@ -9,7 +9,7 @@ services:
     image: mem0/openmemory-mcp
     build: api/
     environment:
-      - USER
+      - USER=nev3rmi
       - API_KEY
     env_file:
       - api/.env
