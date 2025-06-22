@@ -8,9 +8,6 @@ services:
   openmemory-mcp:
     image: mem0/openmemory-mcp
     build: api/
-    environment:
-      - USER=nev3rmi
-      - API_KEY
     env_file:
       - api/.env
     depends_on:
@@ -29,13 +26,12 @@ services:
     image: mem0/openmemory-ui:latest
     ports:
       - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://192.168.31.174:8765
-      - NEXT_PUBLIC_USER_ID=nev3rmi
+    env_file:
+      - ui/.env
     volumes:
       - ./ui:/app
       - /app/node_modules
-    command: pnpm dev
+    command: pnpm dev --turbo
 
 volumes:
   mem0_storage:
