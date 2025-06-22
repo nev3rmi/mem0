@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Eye, EyeOff } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { Input } from "./ui/input"
@@ -21,6 +21,15 @@ export function FormView({ settings, onChange }: FormViewProps) {
   const [showLlmAdvanced, setShowLlmAdvanced] = useState(false)
   const [showLlmApiKey, setShowLlmApiKey] = useState(false)
   const [showEmbedderApiKey, setShowEmbedderApiKey] = useState(false)
+  const [useOpenRouter, setUseOpenRouter] = useState(false)
+
+  useEffect(() => {
+    if (settings.mem0?.llm?.provider?.toLowerCase() === 'openai') {
+      setUseOpenRouter(settings.mem0.llm.config?.base_url === 'https://openrouter.ai/api/v1');
+    } else {
+      setUseOpenRouter(false);
+    }
+  }, [settings.mem0?.llm]);
 
   const handleOpenMemoryChange = (key: string, value: any) => {
     onChange({
@@ -50,7 +59,7 @@ export function FormView({ settings, onChange }: FormViewProps) {
         newConfig.base_url = 'https://openrouter.ai/api/v1';
     } else {
         providerForMem0 = value;
-        if (llmConfig.base_url === 'https://openrouter.ai/api/v1') {
+        if (newConfig.base_url === 'https://openrouter.ai/api/v1') {
            delete newConfig.base_url;
         }
     }
@@ -152,7 +161,6 @@ export function FormView({ settings, onChange }: FormViewProps) {
 
   const LLM_PROVIDERS = [
     "OpenAI",
-    "OpenRouter",
     "Anthropic",
     "Azure OpenAI",
     "Ollama",
@@ -219,7 +227,7 @@ export function FormView({ settings, onChange }: FormViewProps) {
           <div className="space-y-2">
             <Label htmlFor="llm-provider">LLM Provider</Label>
             <Select 
-              value={getUiProviderSelection()}
+              value={settings.mem0?.llm?.provider || ""}
               onValueChange={handleLlmProviderChange}
             >
               <SelectTrigger id="llm-provider">
@@ -246,20 +254,29 @@ export function FormView({ settings, onChange }: FormViewProps) {
           </div>
 
           {isLlmOpenAI && (
-            <div className="space-y-2">
-              <Label htmlFor="llm-openai-base-url">Base URL (Optional)</Label>
-              <Input
-                id="llm-openai-base-url"
-                placeholder="https://api.openai.com/v1"
-                value={settings.mem0?.llm?.config?.base_url || ""}
-                onChange={(e) =>
-                  handleLlmConfigChange("base_url", e.target.value)
-                }
-              />
-               <p className="text-xs text-muted-foreground mt-1">
-                Enter an OpenAI-compatible base URL. For OpenRouter, use <code>https://openrouter.ai/api/v1</code>.
-              </p>
-            </div>
+             <div className="space-y-4">
+                <div className="flex items-center space-x-2 pt-2">
+                  <Switch 
+                    id="use-openrouter" 
+                    checked={useOpenRouter} 
+                    onCheckedChange={(isToggled) => {
+                      setUseOpenRouter(isToggled);
+                      handleLlmConfigChange('base_url', isToggled ? 'https://openrouter.ai/api/v1' : '');
+                    }} 
+                  />
+                  <Label htmlFor="use-openrouter">Use OpenRouter</Label>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="llm-openai-base-url">Base URL</Label>
+                  <Input
+                    id="llm-openai-base-url"
+                    placeholder="https://api.openai.com/v1"
+                    value={settings.mem0?.llm?.config?.base_url || ""}
+                    onChange={(e) => handleLlmConfigChange("base_url", e.target.value)}
+                    disabled={useOpenRouter}
+                  />
+                </div>
+              </div>
           )}
 
           {isLlmOllama && (
