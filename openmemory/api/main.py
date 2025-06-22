@@ -8,6 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.models import User, App
 from uuid import uuid4
 from app.config import USER_ID, DEFAULT_APP_ID
+from sqlalchemy.exc import IntegrityError
+import logging
 
 app = FastAPI(title="OpenMemory API")
 
@@ -38,6 +40,11 @@ def create_default_user():
             )
             db.add(user)
             db.commit()
+    except IntegrityError:
+        # This can happen in a multi-worker setup if another process created the user
+        # between the check and the commit. We can safely ignore it.
+        db.rollback()
+        logging.warning(f"User '{USER_ID}' already exists, likely created by another worker.")
     finally:
         db.close()
 
@@ -67,6 +74,9 @@ def create_default_app():
         )
         db.add(app)
         db.commit()
+    except IntegrityError:
+        db.rollback()
+        logging.warning(f"Default app already exists, likely created by another worker.")
     finally:
         db.close()
 

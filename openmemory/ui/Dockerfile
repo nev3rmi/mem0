@@ -23,7 +23,15 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY . .
 
+# Use the development config for building, if needed
 RUN cp next.config.dev.mjs next.config.mjs
+
+# Pass build-time arguments to the environment
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_USER_ID
+ENV NEXT_PUBLIC_USER_ID=$NEXT_PUBLIC_USER_ID
+
 RUN pnpm build
 
 FROM base AS runner
