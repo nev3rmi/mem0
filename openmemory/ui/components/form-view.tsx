@@ -32,18 +32,40 @@ export function FormView({ settings, onChange }: FormViewProps) {
     })
   }
 
+  const getUiProviderSelection = () => {
+    const llm = settings.mem0?.llm;
+    if (llm?.provider === 'openai' && llm?.config?.base_url === 'https://openrouter.ai/api/v1') {
+        return 'openrouter';
+    }
+    return llm?.provider || '';
+  }
+
   const handleLlmProviderChange = (value: string) => {
+    const llmConfig = settings.mem0?.llm?.config || {};
+    const newConfig = { ...llmConfig };
+    let providerForMem0;
+
+    if (value === 'openrouter') {
+        providerForMem0 = 'openai';
+        newConfig.base_url = 'https://openrouter.ai/api/v1';
+    } else {
+        providerForMem0 = value;
+        if (llmConfig.base_url === 'https://openrouter.ai/api/v1') {
+           delete newConfig.base_url;
+        }
+    }
+
     onChange({
       ...settings,
       mem0: {
         ...settings.mem0,
         llm: {
-          ...settings.mem0.llm,
-          provider: value,
+          provider: providerForMem0,
+          config: newConfig,
         },
       },
-    })
-  }
+    });
+  };
 
   const handleLlmConfigChange = (key: string, value: any) => {
     onChange({
@@ -125,10 +147,12 @@ export function FormView({ settings, onChange }: FormViewProps) {
   const needsLlmApiKey = settings.mem0?.llm?.provider?.toLowerCase() !== "ollama"
   const needsEmbedderApiKey = settings.mem0?.embedder?.provider?.toLowerCase() !== "ollama"
   const isLlmOllama = settings.mem0?.llm?.provider?.toLowerCase() === "ollama"
+  const isLlmOpenAI = settings.mem0?.llm?.provider?.toLowerCase() === "openai"
   const isEmbedderOllama = settings.mem0?.embedder?.provider?.toLowerCase() === "ollama"
 
   const LLM_PROVIDERS = [
     "OpenAI",
+    "OpenRouter",
     "Anthropic",
     "Azure OpenAI",
     "Ollama",
@@ -195,7 +219,7 @@ export function FormView({ settings, onChange }: FormViewProps) {
           <div className="space-y-2">
             <Label htmlFor="llm-provider">LLM Provider</Label>
             <Select 
-              value={settings.mem0?.llm?.provider || ""}
+              value={getUiProviderSelection()}
               onValueChange={handleLlmProviderChange}
             >
               <SelectTrigger id="llm-provider">
@@ -220,6 +244,23 @@ export function FormView({ settings, onChange }: FormViewProps) {
               onChange={(e) => handleLlmConfigChange("model", e.target.value)}
             />
           </div>
+
+          {isLlmOpenAI && (
+            <div className="space-y-2">
+              <Label htmlFor="llm-openai-base-url">Base URL (Optional)</Label>
+              <Input
+                id="llm-openai-base-url"
+                placeholder="https://api.openai.com/v1"
+                value={settings.mem0?.llm?.config?.base_url || ""}
+                onChange={(e) =>
+                  handleLlmConfigChange("base_url", e.target.value)
+                }
+              />
+               <p className="text-xs text-muted-foreground mt-1">
+                Enter an OpenAI-compatible base URL. For OpenRouter, use <code>https://openrouter.ai/api/v1</code>.
+              </p>
+            </div>
+          )}
 
           {isLlmOllama && (
             <div className="space-y-2">
