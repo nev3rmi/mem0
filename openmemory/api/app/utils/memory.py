@@ -38,6 +38,10 @@ from app.database import SessionLocal
 from app.models import Config as ConfigModel
 
 
+_memory_client = None
+_config_hash = None
+
+
 def _get_config_hash(config_dict):
     """Generate a hash of the config to detect changes."""
     config_str = json.dumps(config_dict, sort_keys=True)
@@ -121,6 +125,13 @@ def _fix_ollama_urls(config_section):
                 print(f"Adjusted Ollama URL from {url} to {new_url}")
     
     return config_section
+
+
+def reset_memory_client():
+    """Reset the global memory client to force reinitialization with new config."""
+    global _memory_client, _config_hash
+    _memory_client = None
+    _config_hash = None
 
 
 def get_default_memory_config():
@@ -207,6 +218,8 @@ def get_memory_client(custom_instructions: str = None):
     Raises:
         Exception: If required API keys are not set or critical configuration is missing.
     """
+    global _memory_client, _config_hash
+
     try:
         # Start with default configuration
         config = get_default_memory_config()
@@ -244,11 +257,16 @@ def get_memory_client(custom_instructions: str = None):
             config["llm"]["config"]["system_prompt"] = final_custom_instructions
             print("Using custom instructions in system prompt.")
 
-        print("Initializing new memory client instance.")
-        memory_client = Memory.from_config(config)
-        print("Memory client initialized successfully")
+        new_hash = _get_config_hash(config)
+        
+        # Re-initialize client only if config has changed
+        if _memory_client is None or new_hash != _config_hash:
+            print(f"Initializing memory client with config hash: {new_hash}")
+            _memory_client = Memory.from_config(config)
+            _config_hash = new_hash
+            print("Memory client initialized successfully")
 
-        return memory_client
+        return _memory_client
     except Exception as e:
         print(f"Error getting memory client: {e}")
         return None
