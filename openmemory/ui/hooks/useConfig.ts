@@ -13,14 +13,24 @@ import {
   LLMProvider,
   EmbedderProvider,
   Mem0Config,
-  OpenMemoryConfig
+  OpenMemoryConfig,
+  setLoading,
+  setError,
+  setConfig,
+  setLLMConfig,
+  setEmbedderConfig,
+  setOpenMemoryConfig,
+  VectorStoreProvider,
+  setVectorStoreConfig,
 } from '@/store/configSlice';
+import { toast } from 'react-hot-toast';
 
 interface UseConfigApiReturn {
   fetchConfig: () => Promise<void>;
   saveConfig: (config: { openmemory?: OpenMemoryConfig; mem0: Mem0Config }) => Promise<void>;
   saveLLMConfig: (llmConfig: LLMProvider) => Promise<void>;
   saveEmbedderConfig: (embedderConfig: EmbedderProvider) => Promise<void>;
+  saveVectorStoreConfig: (vectorStoreConfig: VectorStoreProvider) => Promise<void>;
   resetConfig: () => Promise<void>;
   isLoading: boolean;
   error: string | null;
@@ -119,11 +129,31 @@ export const useConfig = (): UseConfigApiReturn => {
     }
   };
 
+  const saveVectorStoreConfig = async (
+    vectorStoreConfig: VectorStoreProvider
+  ) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await axios.put(`${URL}/api/v1/config/mem0/vector_store`, vectorStoreConfig);
+      dispatch(setVectorStoreConfig(response.data));
+      setIsLoading(false);
+      return response.data;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to save Vector Store configuration';
+      setError(errorMessage);
+      setIsLoading(false);
+      throw new Error(errorMessage);
+    }
+  };
+
   return {
     fetchConfig,
     saveConfig,
     saveLLMConfig,
     saveEmbedderConfig,
+    saveVectorStoreConfig,
     resetConfig,
     isLoading,
     error

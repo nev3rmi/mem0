@@ -10,6 +10,7 @@ import { Switch } from "./ui/switch"
 import { Button } from "./ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { Textarea } from "./ui/textarea"
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "./ui/accordion"
 
 interface FormViewProps {
   settings: any
@@ -89,6 +90,38 @@ export function FormView({ settings, onChange }: FormViewProps) {
     })
   }
 
+  const handleVectorStoreProviderChange = (value: string) => {
+    const newConfig = {
+      ...settings,
+      mem0: {
+        ...settings.mem0,
+        vector_store: {
+          ...settings.mem0.vector_store,
+          provider: value,
+          config: {}, // Reset config when provider changes
+        },
+      },
+    };
+    onChange(newConfig);
+  };
+
+  const handleVectorStoreConfigChange = (key: string, value: any) => {
+    const newConfig = {
+      ...settings,
+      mem0: {
+        ...settings.mem0,
+        vector_store: {
+          ...settings.mem0.vector_store,
+          config: {
+            ...settings.mem0.vector_store?.config,
+            [key]: value,
+          },
+        },
+      },
+    };
+    onChange(newConfig);
+  };
+
   const needsLlmApiKey = settings.mem0?.llm?.provider?.toLowerCase() !== "ollama"
   const needsEmbedderApiKey = settings.mem0?.embedder?.provider?.toLowerCase() !== "ollama"
   const isLlmOllama = settings.mem0?.llm?.provider?.toLowerCase() === "ollama"
@@ -124,6 +157,8 @@ export function FormView({ settings, onChange }: FormViewProps) {
     "LangChain",
     "AWS Bedrock",
   ]
+
+  const vectorStoreProvider = settings.mem0.vector_store?.provider
 
   return (
     <div className="space-y-8">
@@ -343,6 +378,66 @@ export function FormView({ settings, onChange }: FormViewProps) {
           )}
         </CardContent>
       </Card>
+
+      <Accordion type="single" collapsible>
+        <AccordionItem value="vector_store">
+          <AccordionTrigger className="text-lg font-semibold">Vector Store</AccordionTrigger>
+          <AccordionContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Provider</Label>
+                <Select value={vectorStoreProvider} onValueChange={handleVectorStoreProviderChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="qdrant">Qdrant</SelectItem>
+                    <SelectItem value="chroma">Chroma</SelectItem>
+                    <SelectItem value="pgvector">PGVector</SelectItem>
+                    {/* Add other providers as needed */}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {vectorStoreProvider === 'qdrant' && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Host</Label>
+                    <Input
+                      value={settings.mem0.vector_store?.config?.host || ''}
+                      onChange={(e) => handleVectorStoreConfigChange('host', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Port</Label>
+                    <Input
+                      type="number"
+                      value={settings.mem0.vector_store?.config?.port || ''}
+                      onChange={(e) => handleVectorStoreConfigChange('port', parseInt(e.target.value))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Collection Name</Label>
+                    <Input
+                      value={settings.mem0.vector_store?.config?.collection_name || ''}
+                      onChange={(e) => handleVectorStoreConfigChange('collection_name', e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+              <div className="space-y-2">
+                <Label>Embedding Dimensions</Label>
+                <Input
+                  type="number"
+                  placeholder="e.g. 1536"
+                  value={settings.mem0.vector_store?.config?.embedding_model_dims || ''}
+                  onChange={(e) => handleVectorStoreConfigChange('embedding_model_dims', parseInt(e.target.value))}
+                />
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   )
 } 

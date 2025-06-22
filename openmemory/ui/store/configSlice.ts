@@ -24,9 +24,19 @@ export interface EmbedderProvider {
   config: EmbedderConfig;
 }
 
+export interface VectorStoreConfig {
+  [key: string]: any;
+}
+
+export interface VectorStoreProvider {
+  provider: string;
+  config: VectorStoreConfig;
+}
+
 export interface Mem0Config {
   llm?: LLMProvider;
   embedder?: EmbedderProvider;
+  vector_store?: VectorStoreProvider;
 }
 
 export interface OpenMemoryConfig {

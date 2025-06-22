@@ -243,6 +243,10 @@ def get_memory_client(custom_instructions: str = None):
                         # Fix Ollama URLs for Docker if needed
                         if config["embedder"].get("provider") == "ollama":
                             config["embedder"] = _fix_ollama_urls(config["embedder"])
+                    
+                    # Update Vector Store configuration if available
+                    if "vector_store" in mem0_config and mem0_config["vector_store"] is not None:
+                        config["vector_store"] = mem0_config["vector_store"]
             else:
                 print("No configuration found in database, using defaults")
                     

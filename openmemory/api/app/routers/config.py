@@ -30,12 +30,17 @@ class EmbedderProvider(BaseModel):
     provider: str = Field(..., description="Embedder provider name")
     config: EmbedderConfig
 
+class VectorStoreProvider(BaseModel):
+    provider: str = Field(..., description="Vector store provider name")
+    config: Dict[str, Any]
+
 class OpenMemoryConfig(BaseModel):
     custom_instructions: Optional[str] = Field(None, description="Custom instructions for memory management and fact extraction")
 
 class Mem0Config(BaseModel):
     llm: Optional[LLMProvider] = None
     embedder: Optional[EmbedderProvider] = None
+    vector_store: Optional[VectorStoreProvider] = None
 
 class ConfigSchema(BaseModel):
     openmemory: Optional[OpenMemoryConfig] = None
@@ -48,6 +53,14 @@ def get_default_configuration():
             "custom_instructions": None
         },
         "mem0": {
+            "vector_store": {
+                "provider": "qdrant",
+                "config": {
+                    "collection_name": "openmemory",
+                    "host": "mem0_store",
+                    "port": 6333,
+                }
+            },
             "llm": {
                 "provider": "openai",
                 "config": {
@@ -99,6 +112,10 @@ def get_config_from_db(db: Session, key: str = "main"):
         if "embedder" not in config_value["mem0"] or config_value["mem0"]["embedder"] is None:
             config_value["mem0"]["embedder"] = default_config["mem0"]["embedder"]
     
+        # Ensure vector_store config exists with defaults
+        if "vector_store" not in config_value["mem0"] or config_value["mem0"]["vector_store"] is None:
+            config_value["mem0"]["vector_store"] = default_config["mem0"]["vector_store"]
+
     # Save the updated config back to database if it was modified
     if config_value != config.value:
         config.value = config_value
@@ -214,6 +231,30 @@ async def update_embedder_configuration(embedder_config: EmbedderProvider, db: S
     save_config_to_db(db, current_config)
     reset_memory_client()
     return current_config["mem0"]["embedder"]
+
+@router.get("/mem0/vector_store", response_model=VectorStoreProvider)
+async def get_vector_store_configuration(db: Session = Depends(get_db)):
+    """Get only the Vector Store configuration."""
+    config = get_config_from_db(db)
+    vector_store_config = config.get("mem0", {}).get("vector_store", {})
+    return vector_store_config
+
+@router.put("/mem0/vector_store", response_model=VectorStoreProvider)
+async def update_vector_store_configuration(vector_store_config: VectorStoreProvider, db: Session = Depends(get_db)):
+    """Update only the Vector Store configuration."""
+    current_config = get_config_from_db(db)
+    
+    # Ensure mem0 key exists
+    if "mem0" not in current_config:
+        current_config["mem0"] = {}
+    
+    # Update the Vector Store configuration
+    current_config["mem0"]["vector_store"] = vector_store_config.dict(exclude_none=True)
+    
+    # Save the configuration to database
+    save_config_to_db(db, current_config)
+    reset_memory_client()
+    return current_config["mem0"]["vector_store"]
 
 @router.get("/openmemory", response_model=OpenMemoryConfig)
 async def get_openmemory_configuration(db: Session = Depends(get_db)):
