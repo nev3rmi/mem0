@@ -37,6 +37,12 @@ RUN pnpm build
 FROM base AS runner
 WORKDIR /app
 
+# Pass build-time arguments to the runner environment
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_USER_ID
+ENV NEXT_PUBLIC_USER_ID=$NEXT_PUBLIC_USER_ID
+
 ENV NODE_ENV=production
 
 RUN addgroup --system --gid 1001 nodejs && \
