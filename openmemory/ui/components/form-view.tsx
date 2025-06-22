@@ -379,65 +379,68 @@ export function FormView({ settings, onChange }: FormViewProps) {
         </CardContent>
       </Card>
 
-      <Accordion type="single" collapsible>
-        <AccordionItem value="vector_store">
-          <AccordionTrigger className="text-lg font-semibold">Vector Store</AccordionTrigger>
-          <AccordionContent>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Provider</Label>
-                <Select value={vectorStoreProvider} onValueChange={handleVectorStoreProviderChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a provider" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="qdrant">Qdrant</SelectItem>
-                    <SelectItem value="chroma">Chroma</SelectItem>
-                    <SelectItem value="pgvector">PGVector</SelectItem>
-                    {/* Add other providers as needed */}
-                  </SelectContent>
-                </Select>
-              </div>
+      {/* Vector Store Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Vector Store</CardTitle>
+          <CardDescription>Configure your Vector Store provider and settings</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label>Provider</Label>
+            <Select value={vectorStoreProvider} onValueChange={handleVectorStoreProviderChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a provider" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="qdrant">Qdrant</SelectItem>
+                <SelectItem value="chroma">Chroma</SelectItem>
+                <SelectItem value="pgvector">PGVector</SelectItem>
+                {/* Add other providers as needed */}
+              </SelectContent>
+            </Select>
+          </div>
 
-              {vectorStoreProvider === 'qdrant' && (
-                <>
-                  <div className="space-y-2">
-                    <Label>Host</Label>
-                    <Input
-                      value={settings.mem0.vector_store?.config?.host || ''}
-                      onChange={(e) => handleVectorStoreConfigChange('host', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Port</Label>
-                    <Input
-                      type="number"
-                      value={settings.mem0.vector_store?.config?.port || ''}
-                      onChange={(e) => handleVectorStoreConfigChange('port', parseInt(e.target.value))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Collection Name</Label>
-                    <Input
-                      value={settings.mem0.vector_store?.config?.collection_name || ''}
-                      onChange={(e) => handleVectorStoreConfigChange('collection_name', e.target.value)}
-                    />
-                  </div>
-                </>
-              )}
+          {vectorStoreProvider === 'qdrant' && (
+            <>
               <div className="space-y-2">
-                <Label>Embedding Dimensions</Label>
+                <Label>Host</Label>
                 <Input
-                  type="number"
-                  placeholder="e.g. 1536"
-                  value={settings.mem0.vector_store?.config?.embedding_model_dims || ''}
-                  onChange={(e) => handleVectorStoreConfigChange('embedding_model_dims', parseInt(e.target.value))}
+                  value={settings.mem0.vector_store?.config?.host || ''}
+                  onChange={(e) => handleVectorStoreConfigChange('host', e.target.value)}
+                  placeholder="e.g. localhost or mem0_store"
                 />
               </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+              <div className="space-y-2">
+                <Label>Port</Label>
+                <Input
+                  type="number"
+                  value={settings.mem0.vector_store?.config?.port || ''}
+                  onChange={(e) => handleVectorStoreConfigChange('port', parseInt(e.target.value))}
+                  placeholder="e.g. 6333"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Collection Name</Label>
+                <Input
+                  value={settings.mem0.vector_store?.config?.collection_name || ''}
+                  onChange={(e) => handleVectorStoreConfigChange('collection_name', e.target.value)}
+                  placeholder="e.g. mem0"
+                />
+              </div>
+            </>
+          )}
+          <div className="space-y-2">
+            <Label>Embedding Dimensions</Label>
+            <Input
+              type="number"
+              placeholder="e.g. 1536"
+              value={settings.mem0.vector_store?.config?.embedding_model_dims || ''}
+              onChange={(e) => handleVectorStoreConfigChange('embedding_model_dims', parseInt(e.target.value))}
+            />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 } 
