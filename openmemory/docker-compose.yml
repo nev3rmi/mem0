@@ -17,7 +17,7 @@ services:
     volumes:
       - ./api:/usr/src/openmemory
     command: >
-      sh -c "uvicorn main:app --host 0.0.0.0 --port 8765 --reload --workers 4"
+      sh -c "uvicorn main:app --host 0.0.0.0 --port 8765 --reload --workers 1"
   openmemory-ui:
     build:
       context: ui/
