@@ -48,33 +48,13 @@ export const Install = () => {
 
   const URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8765";
 
-  const handleCopy = async (tab: string, isMcp: boolean = false) => {
-    const text = isMcp
-      ? `${URL}/mcp/openmemory/sse/${user}`
-      : `npx install-mcp ${URL}/mcp/${tab}/sse/${user} --client ${tab}`;
-
+  const handleCopy = async (textToCopy: string, tab: string) => {
     try {
-      // Try using the Clipboard API first
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        // Fallback: Create a temporary textarea element
-        const textarea = document.createElement("textarea");
-        textarea.value = text;
-        textarea.style.position = "fixed";
-        textarea.style.opacity = "0";
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textarea);
-      }
-
-      // Update UI to show success
+      await navigator.clipboard.writeText(textToCopy);
       setCopiedTab(tab);
-      setTimeout(() => setCopiedTab(null), 1500); // Reset after 1.5s
+      setTimeout(() => setCopiedTab(null), 1500);
     } catch (error) {
       console.error("Failed to copy text:", error);
-      // You might want to add a toast notification here to show the error
     }
   };
 
@@ -94,8 +74,8 @@ export const Install = () => {
         <div className="data-[state=active]:bg-[linear-gradient(to_top,_rgba(255,255,255,0.08),_rgba(255,255,255,0))] data-[state=active]:border-[#708090]"></div>
       </div>
 
-      <Tabs defaultValue="claude" className="w-full">
-        <TabsList className="bg-transparent border-b border-zinc-800 rounded-none w-full justify-start gap-0 p-0 grid grid-cols-8">
+      <Tabs defaultValue="cursor" className="w-full">
+        <TabsList className="bg-transparent border-b border-zinc-800 rounded-none w-full justify-start gap-0 grid grid-cols-8">
           {allTabs.map(({ key, label, icon }) => (
             <TabsTrigger
               key={key}
@@ -138,7 +118,7 @@ export const Install = () => {
                   <button
                     className="absolute top-0 right-0 py-3 px-4 rounded-md hover:bg-zinc-600 bg-zinc-700"
                     aria-label="Copy to clipboard"
-                    onClick={() => handleCopy("mcp", true)}
+                    onClick={() => handleCopy(`${URL}/mcp/openmemory/sse/${user}`, "mcp")}
                   >
                     {copiedTab === "mcp" ? (
                       <Check className="h-5 w-5 text-green-400" />
@@ -153,28 +133,25 @@ export const Install = () => {
         </TabsContent>
 
         {/* Client Tabs Content */}
-        {clientTabs.map(({ key }) => (
+        {clientTabs.map(({ key, label }) => (
           <TabsContent key={key} value={key} className="mt-6">
             <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader className="py-4">
-                <CardTitle className="text-white text-xl">
-                  {key.charAt(0).toUpperCase() + key.slice(1)} Installation
-                  Command
-                </CardTitle>
+                <CardTitle className="text-white text-xl">{label} MCP URL</CardTitle>
               </CardHeader>
               <hr className="border-zinc-800" />
               <CardContent className="py-4">
                 <div className="relative">
                   <pre className="bg-zinc-800 px-4 py-3 rounded-md overflow-x-auto text-sm">
                     <code className="text-gray-300">
-                      {`npx install-mcp ${URL}/mcp/${key}/sse/${user} --client ${key}`}
+                      {`${URL}/mcp/${key}/sse/${user}`}
                     </code>
                   </pre>
                   <div>
                     <button
                       className="absolute top-0 right-0 py-3 px-4 rounded-md hover:bg-zinc-600 bg-zinc-700"
                       aria-label="Copy to clipboard"
-                      onClick={() => handleCopy(key)}
+                      onClick={() => handleCopy(`${URL}/mcp/${key}/sse/${user}`, key)}
                     >
                       {copiedTab === key ? (
                         <Check className="h-5 w-5 text-green-400" />
@@ -183,6 +160,25 @@ export const Install = () => {
                       )}
                     </button>
                   </div>
+                </div>
+                <div className="mt-4 text-sm text-zinc-400">
+                  <h4 className="font-semibold text-white mb-2">How to Use:</h4>
+                  <ol className="list-decimal list-inside space-y-2">
+                    <li>
+                      Open your client's MCP configuration file (e.g.,
+                      mcp.json for Cursor).
+                    </li>
+                    <li>
+                      Add or update the entry for{" "}
+                      <strong className="text-white">{key}</strong> with the URL
+                      above:
+                    </li>
+                  </ol>
+                  <pre className="bg-zinc-800 px-4 py-3 rounded-md overflow-x-auto text-xs mt-2">
+                    <code className="text-gray-300">
+                      {`"${key}": {\n  "url": "${URL}/mcp/${key}/sse/${user}"\n}`}
+                    </code>
+                  </pre>
                 </div>
               </CardContent>
             </Card>
