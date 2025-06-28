@@ -37,9 +37,11 @@ def get_categories_for_memory(memory: str) -> List[str]:
             api_key=api_key,
             base_url=os.environ.get("OPENROUTER_API_BASE", "https://openrouter.ai/api/v1"),
         )
+        model = os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini")
     else:
         # If OPENROUTER_API_KEY is not set, it will use OPENAI_API_KEY by default
         client = OpenAI()
+        model = "gpt-4o-mini"
         
     completion = None  # Initialize completion to None
     try:
@@ -49,15 +51,27 @@ def get_categories_for_memory(memory: str) -> List[str]:
         ]
 
         completion = client.chat.completions.create(
-            model="gpt-4o-mini",  # This will be overridden by your config
+            model=model,
             messages=messages,
             temperature=0,
             response_format={"type": "json_object"},
         )
 
         response_content = completion.choices[0].message.content
+        logging.debug(f"[DEBUG] Raw response content: {response_content}")
+        
+        # Check if response is empty or None
+        if not response_content or response_content.strip() == "":
+            logging.error("[ERROR] Empty response content from API")
+            return []
+        
         # The response from the LLM is a JSON string, so we need to parse it.
-        parsed_data = json.loads(response_content)
+        try:
+            parsed_data = json.loads(response_content)
+        except json.JSONDecodeError as json_error:
+            logging.error(f"[ERROR] Failed to parse JSON response: {json_error}")
+            logging.error(f"[ERROR] Response content was: {repr(response_content)}")
+            return []
         
         # Now, validate with Pydantic
         parsed = MemoryCategories.model_validate(parsed_data)
@@ -71,4 +85,6 @@ def get_categories_for_memory(memory: str) -> List[str]:
                 logging.debug(f"[DEBUG] Raw response: {completion.choices[0].message.content}")
         except Exception as debug_e:
             logging.debug(f"[DEBUG] Could not extract raw response: {debug_e}")
-        raise
+        
+        # Return empty list instead of raising exception to prevent service disruption
+        return []
