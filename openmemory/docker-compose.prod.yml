@@ -10,7 +10,7 @@ services:
     build:
       context: api/
     environment:
-      - USER=user1
+      - USER=${NEXT_PUBLIC_USER_ID:-user1}
       - API_KEY
     env_file:
       - api/.env
@@ -28,13 +28,15 @@ services:
       dockerfile: Dockerfile
       target: runner
       args:
-        - NEXT_PUBLIC_API_URL=http://192.168.31.174:8765
-        - NEXT_PUBLIC_USER_ID=user1
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8765}
+        - NEXT_PUBLIC_USER_ID=${NEXT_PUBLIC_USER_ID:-user1}
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://192.168.31.174:8765
-      - NEXT_PUBLIC_USER_ID=user1
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8765}
+      - NEXT_PUBLIC_USER_ID=${NEXT_PUBLIC_USER_ID:-user1}
+    env_file:
+      - .env
     entrypoint: ""
     volumes: []
     command: node server.js
